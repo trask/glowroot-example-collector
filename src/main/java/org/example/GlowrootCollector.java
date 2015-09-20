@@ -3,9 +3,9 @@ package org.example;
 import java.util.Collection;
 import java.util.Map;
 
-import org.glowroot.collector.spi.Aggregate;
 import org.glowroot.collector.spi.GaugePoint;
-import org.glowroot.collector.spi.Trace;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 
 public class GlowrootCollector implements org.glowroot.collector.spi.Collector {
 
