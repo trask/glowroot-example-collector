@@ -15,9 +15,10 @@
  */
 package org.example;
 
-import java.util.Map;
+import java.util.List;
 
-import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 
@@ -29,13 +30,12 @@ public class GlowrootCollector implements org.glowroot.collector.spi.Collector {
         System.out.println("========================================");
     }
 
-    public void collectAggregates(Map<String, Aggregate> overallAggregates,
-            Map<String, Map<String, Aggregate>> transactionAggregates, long captureTime)
-                    throws Exception {
+    public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
+            List<TransactionAggregate> transactionAggregates) throws Exception {
         System.out.println("collectAggregates");
     }
 
-    public void collectGaugeValues(Map<String, GaugeValue> gaugeValues) throws Exception {
+    public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
         System.out.println("collectGaugeValues: " + gaugeValues.size());
     }
 }
