@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,27 +15,40 @@
  */
 package org.example;
 
+import java.io.File;
 import java.util.List;
 
-import org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate;
-import org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate;
-import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
-import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
+import org.glowroot.agent.shaded.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.agent.shaded.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
+import org.glowroot.agent.shaded.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.agent.shaded.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.agent.shaded.glowroot.wire.api.model.TraceOuterClass.Trace;
 
-public class GlowrootCollector implements org.glowroot.collector.spi.Collector {
+public class GlowrootCollector implements org.glowroot.agent.collector.Collector {
 
-    public void collectTrace(Trace trace) throws Exception {
-        System.out.println("========================================");
-        PrintTrace.printTrace(trace);
-        System.out.println("========================================");
+    @Override
+    public void init(File glowrootBaseDir, Environment environment, AgentConfig agentConfig,
+            AgentConfigUpdater agentConfigUpdater) throws Exception {
+        System.out.println("collectInit");
     }
 
-    public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
-            List<TransactionAggregate> transactionAggregates) throws Exception {
+    @Override
+    public void collectAggregates(long captureTime, Aggregates aggregates) throws Exception {
         System.out.println("collectAggregates");
     }
 
+    @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
         System.out.println("collectGaugeValues: " + gaugeValues.size());
+    }
+
+    @Override
+    public void collectTrace(Trace trace) throws Exception {
+        System.out.println("collectAggregates");
+    }
+
+    @Override
+    public void log(LogEvent logEvent) throws Exception {
+        System.out.println("log");
     }
 }

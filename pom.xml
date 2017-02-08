@@ -13,44 +13,23 @@
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-collector-spi</artifactId>
-      <version>0.8.5-SNAPSHOT</version>
+      <artifactId>glowroot-agent</artifactId>
+      <version>0.9.10</version>
     </dependency>
   </dependencies>
 
   <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-shade-plugin</artifactId>
-        <configuration>
-          <dependencyReducedPomLocation>
-            ${project.build.directory}/dependency-reduced-pom.xml
-          </dependencyReducedPomLocation>
-          <createSourcesJar>true</createSourcesJar>
-          <shadeSourcesContent>true</shadeSourcesContent>
-        </configuration>
-        <executions>
-          <execution>
-            <id>default</id>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <artifactSet>
-                <includes>
-                  <include>org.example:glowroot-example-collector</include>
-                </includes>
-              </artifactSet>
-              <relocations>
-                <relocation>
-                  <pattern>com.google.protobuf</pattern>
-                  <shadedPattern>org.glowroot.shaded.google.protobuf</shadedPattern>
-                </relocation>
-              </relocations>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.6.1</version>
+          <configuration>
+            <source>1.6</source>
+            <target>1.6</target>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 </project>
