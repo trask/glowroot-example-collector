@@ -27,7 +27,7 @@ import org.glowroot.agent.shaded.glowroot.wire.api.model.TraceOuterClass.Trace;
 public class GlowrootCollector implements org.glowroot.agent.collector.Collector {
 
     @Override
-    public void init(File glowrootBaseDir, Environment environment, AgentConfig agentConfig,
+    public void init(File glowrootDir, Environment environment, AgentConfig agentConfig,
             AgentConfigUpdater agentConfigUpdater) throws Exception {
         System.out.println("collectInit");
     }
