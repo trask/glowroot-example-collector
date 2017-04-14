@@ -23,7 +23,7 @@ import org.glowroot.agent.shaded.glowroot.wire.api.model.CollectorServiceOuterCl
 import org.glowroot.agent.shaded.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.agent.shaded.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 
-public class GlowrootCollector implements org.glowroot.agent.collector.Collector {
+public class GlowrootExampleCollector implements org.glowroot.agent.collector.Collector {
 
     @Override
     public void init(File glowrootDir, File agentDir, Environment environment,
