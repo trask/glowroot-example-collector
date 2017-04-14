@@ -27,27 +27,27 @@ public class GlowrootExampleCollector implements org.glowroot.agent.collector.Co
 
     @Override
     public void init(File glowrootDir, File agentDir, Environment environment,
-            AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) throws Exception {
+            AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) {
         System.out.println("collectInit");
     }
 
     @Override
-    public void collectAggregates(AggregateReader aggregateReader) throws Exception {
+    public void collectAggregates(AggregateReader aggregateReader) {
         System.out.println("collectAggregates");
     }
 
     @Override
-    public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
+    public void collectGaugeValues(List<GaugeValue> gaugeValues) {
         System.out.println("collectGaugeValues: " + gaugeValues.size());
     }
 
     @Override
-    public void collectTrace(TraceReader traceReader) throws Exception {
+    public void collectTrace(TraceReader traceReader) {
         System.out.println("collectTrace");
     }
 
     @Override
-    public void log(LogEvent logEvent) throws Exception {
+    public void log(LogEvent logEvent) {
         System.out.println("log");
     }
 }
