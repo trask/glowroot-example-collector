@@ -22,18 +22,17 @@ import org.glowroot.agent.shaded.glowroot.wire.api.model.AgentConfigOuterClass.A
 import org.glowroot.agent.shaded.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.agent.shaded.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.agent.shaded.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
-import org.glowroot.agent.shaded.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public class GlowrootCollector implements org.glowroot.agent.collector.Collector {
 
     @Override
-    public void init(File glowrootDir, Environment environment, AgentConfig agentConfig,
-            AgentConfigUpdater agentConfigUpdater) throws Exception {
+    public void init(File glowrootDir, File agentDir, Environment environment,
+            AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) throws Exception {
         System.out.println("collectInit");
     }
 
     @Override
-    public void collectAggregates(long captureTime, Aggregates aggregates) throws Exception {
+    public void collectAggregates(AggregateReader aggregateReader) throws Exception {
         System.out.println("collectAggregates");
     }
 
@@ -43,8 +42,8 @@ public class GlowrootCollector implements org.glowroot.agent.collector.Collector
     }
 
     @Override
-    public void collectTrace(Trace trace) throws Exception {
-        System.out.println("collectAggregates");
+    public void collectTrace(TraceReader traceReader) throws Exception {
+        System.out.println("collectTrace");
     }
 
     @Override

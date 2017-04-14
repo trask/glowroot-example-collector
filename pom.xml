@@ -14,7 +14,7 @@
     <dependency>
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent</artifactId>
-      <version>0.9.10</version>
+      <version>0.9.15</version>
     </dependency>
   </dependencies>
 
