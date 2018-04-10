@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,15 @@ package org.example;
 import java.io.File;
 import java.util.List;
 
-import org.glowroot.agent.shaded.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.agent.shaded.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
-import org.glowroot.agent.shaded.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
-import org.glowroot.agent.shaded.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
 
-public class GlowrootExampleCollector implements org.glowroot.agent.collector.Collector {
+public class ExampleCollector implements org.glowroot.agent.collector.Collector {
 
     @Override
-    public void init(File glowrootDir, File agentDir, Environment environment,
+    public void init(File confDir, File sharedConfDir, Environment environment,
             AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) {
         System.out.println("collectInit");
     }
