@@ -15,39 +15,114 @@
  */
 package org.example;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+
+import org.glowroot.agent.shaded.com.google.common.collect.ImmutableList;
+import org.glowroot.agent.shaded.com.google.common.collect.Lists;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.ProfileOuterClass.Profile;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.glowroot.agent.shaded.org.slf4j.Logger;
+import org.glowroot.agent.shaded.org.slf4j.LoggerFactory;
 
 public class ExampleCollector implements org.glowroot.agent.collector.Collector {
 
+    private static final Logger logger = LoggerFactory.getLogger(ExampleCollector.class);
+
+    private static final JsonFactory jsonFactory = new JsonFactory();
+
     @Override
     public void init(File confDir, File sharedConfDir, Environment environment,
-            AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) {
-        System.out.println("collectInit");
+            AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) {}
+
+    @Override
+    public void collectAggregates(AggregateReader aggregateReader) {}
+
+    @Override
+    public void collectGaugeValues(List<GaugeValue> gaugeValues) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        JsonGenerator jg = jsonFactory.createGenerator(baos);
+        jg.writeStartArray();
+        for (GaugeValue gaugeValue : gaugeValues) {
+            jg.writeStartObject();
+            jg.writeStringField("gaugeName", gaugeValue.getGaugeName());
+            jg.writeNumberField("captureTime", gaugeValue.getCaptureTime());
+            jg.writeNumberField("value", gaugeValue.getValue());
+            jg.writeNumberField("weight", gaugeValue.getWeight());
+            jg.writeEndObject();
+        }
+        jg.writeEndArray();
+        jg.close();
+        logger.info(baos.toString());
     }
 
     @Override
-    public void collectAggregates(AggregateReader aggregateReader) {
-        System.out.println("collectAggregates");
+    public void collectTrace(TraceReader traceReader) throws Exception {
+        CollectingTraceVisitor traceVisitor = new CollectingTraceVisitor();
+        traceReader.accept(traceVisitor);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        JsonGenerator jg = jsonFactory.createGenerator(baos);
+        jg.writeStartObject();
+        jg.writeFieldName("header");
+        TraceWriter.writeHeader(jg, traceVisitor.header);
+        if (!traceVisitor.entries.isEmpty()) {
+            jg.writeFieldName("entries");
+            TraceWriter.writeEntries(jg, traceVisitor.entries, traceVisitor.sharedQueryTexts);
+        }
+        if (!traceVisitor.queries.isEmpty()) {
+            jg.writeFieldName("queries");
+            TraceWriter.writeQueries(jg, traceVisitor.queries, traceVisitor.sharedQueryTexts);
+        }
+        jg.writeEndObject();
+        jg.close();
+        logger.info(baos.toString());
     }
 
     @Override
-    public void collectGaugeValues(List<GaugeValue> gaugeValues) {
-        System.out.println("collectGaugeValues: " + gaugeValues.size());
-    }
+    public void log(LogEvent logEvent) {}
 
-    @Override
-    public void collectTrace(TraceReader traceReader) {
-        System.out.println("collectTrace");
-    }
+    private static class CollectingTraceVisitor implements TraceVisitor {
 
-    @Override
-    public void log(LogEvent logEvent) {
-        System.out.println("log");
+        private final List<Trace.Entry> entries = Lists.newArrayList();
+        private List<Aggregate.Query> queries = ImmutableList.of();
+        private List<String> sharedQueryTexts = ImmutableList.of();
+        private Trace.Header header;
+
+        @Override
+        public void visitEntry(Trace.Entry entry) {
+            entries.add(entry);
+        }
+
+        @Override
+        public void visitQueries(List<Aggregate.Query> queries) {
+            this.queries = queries;
+        }
+
+        @Override
+        public void visitSharedQueryTexts(List<String> sharedQueryTexts) {
+            this.sharedQueryTexts = sharedQueryTexts;
+        }
+
+        @Override
+        public void visitMainThreadProfile(Profile profile) {}
+
+        @Override
+        public void visitAuxThreadProfile(Profile profile) {}
+
+        @Override
+        public void visitHeader(Trace.Header header) {
+            this.header = header;
+        }
     }
 }
