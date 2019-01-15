@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,13 +70,32 @@ class TraceWriter {
             writeDetailEntries(detailEntries);
         }
         if (header.hasError()) {
+            jg.writeFieldName("error");
             writeError(header.getError());
         }
-        writeMainThreadTimers(header);
-        writeAuxThreadTimers(header);
-        writeAsyncTimers(header);
-        writeMainThreadStats(header);
-        writeAuxThreadStats(header);
+        if (header.hasMainThreadRootTimer()) {
+            jg.writeArrayFieldStart("mainThreadFlattenedTimers");
+            writeFlattenedTimers(header.getMainThreadRootTimer());
+            jg.writeEndArray();
+        }
+        if (header.hasAuxThreadRootTimer()) {
+            jg.writeArrayFieldStart("auxThreadFlattenedTimers");
+            writeFlattenedTimers(header.getAuxThreadRootTimer());
+            jg.writeEndArray();
+        }
+        if (header.getAsyncTimerCount() > 0) {
+            jg.writeArrayFieldStart("asyncTimers");
+            writeAsyncTimers(header.getAsyncTimerList());
+            jg.writeEndArray();
+        }
+        if (header.hasMainThreadRootTimer()) {
+            jg.writeFieldName("mainThreadStats");
+            writeThreadStats(header.getMainThreadStats());
+        }
+        if (header.hasAuxThreadRootTimer()) {
+            jg.writeFieldName("auxThreadStats");
+            writeThreadStats(header.getAuxThreadStats());
+        }
 
         jg.writeEndObject();
     }
@@ -247,27 +266,10 @@ class TraceWriter {
                 stackTraceElement.getLineNumber()).toString());
     }
 
-    private void writeMainThreadTimers(Trace.Header header) throws IOException {
-        if (header.hasMainThreadRootTimer()) {
-            Map<String, FlattenedTimer> flattenedTimers = new HashMap<String, FlattenedTimer>();
-            flattenTimer(header.getMainThreadRootTimer(), flattenedTimers, new HashSet<String>());
-            jg.writeArrayFieldStart("mainThreadFlattenedTimers");
-            writeFlattenedTimers(flattenedTimers);
-            jg.writeEndArray();
-        }
-    }
-
-    private void writeAuxThreadTimers(Trace.Header header) throws IOException {
-        List<Trace.Timer> auxThreadRootTimers = header.getAuxThreadRootTimerList();
-        if (!auxThreadRootTimers.isEmpty()) {
-            Map<String, FlattenedTimer> flattenedTimers = new HashMap<String, FlattenedTimer>();
-            // optimization to re-use the same set across aux thread root timers
-            Set<String> parentTimerNames = new HashSet<String>();
-            flattenTimer(auxThreadRootTimers.get(0), flattenedTimers, parentTimerNames);
-            jg.writeArrayFieldStart("auxThreadFlattenedTimers");
-            writeFlattenedTimers(flattenedTimers);
-            jg.writeEndArray();
-        }
+    private void writeFlattenedTimers(Trace.Timer rootTimer) throws IOException {
+        Map<String, FlattenedTimer> flattenedTimers = new HashMap<String, FlattenedTimer>();
+        flattenTimer(rootTimer, flattenedTimers, new HashSet<String>());
+        writeFlattenedTimers(flattenedTimers);
     }
 
     // need to keep track of parent timer names since the same timer can be nested underneath itself
@@ -305,41 +307,22 @@ class TraceWriter {
         }
     }
 
-    private void writeAsyncTimers(Trace.Header header) throws IOException {
-        List<Trace.Timer> asyncTimers = header.getAsyncTimerList();
-        if (!asyncTimers.isEmpty()) {
-            jg.writeArrayFieldStart("asyncTimers");
-            for (Trace.Timer asyncTimer : asyncTimers) {
-                jg.writeStartObject();
-                jg.writeStringField("name", asyncTimer.getName());
-                jg.writeNumberField("totalNanos", asyncTimer.getTotalNanos());
-                jg.writeNumberField("count", asyncTimer.getCount());
-                jg.writeEndObject();
-            }
-            jg.writeEndArray();
-        }
-    }
-
-    private void writeMainThreadStats(Trace.Header header) throws IOException {
-        if (header.hasMainThreadRootTimer()) {
-            jg.writeFieldName("mainThreadStats");
-            writeThreadStats(header.getMainThreadStats());
-        }
-    }
-
-    private void writeAuxThreadStats(Trace.Header header) throws IOException {
-        if (header.getAuxThreadRootTimerCount() > 0) {
-            jg.writeFieldName("auxThreadStats");
-            writeThreadStats(header.getAuxThreadStats());
+    private void writeAsyncTimers(List<Trace.Timer> asyncTimers) throws IOException {
+        for (Trace.Timer asyncTimer : asyncTimers) {
+            jg.writeStartObject();
+            jg.writeStringField("name", asyncTimer.getName());
+            jg.writeNumberField("totalNanos", asyncTimer.getTotalNanos());
+            jg.writeNumberField("count", asyncTimer.getCount());
+            jg.writeEndObject();
         }
     }
 
     private void writeThreadStats(Trace.ThreadStats threadStats) throws IOException {
         jg.writeStartObject();
-        jg.writeNumberField("totalCpuNanos", threadStats.getTotalCpuNanos());
-        jg.writeNumberField("totalBlockedNanos", threadStats.getTotalBlockedNanos());
-        jg.writeNumberField("totalWaitedNanos", threadStats.getTotalWaitedNanos());
-        jg.writeNumberField("totalAllocatedBytes", threadStats.getTotalAllocatedBytes());
+        jg.writeNumberField("cpuNanos", threadStats.getCpuNanos());
+        jg.writeNumberField("blockedNanos", threadStats.getBlockedNanos());
+        jg.writeNumberField("waitedNanos", threadStats.getWaitedNanos());
+        jg.writeNumberField("allocatedBytes", threadStats.getAllocatedBytes());
         jg.writeEndObject();
     }
 

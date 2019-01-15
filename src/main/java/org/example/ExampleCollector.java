@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,9 @@ import org.glowroot.agent.shaded.com.google.common.collect.ImmutableList;
 import org.glowroot.agent.shaded.com.google.common.collect.Lists;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
-import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
-import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.LogEvent;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import org.glowroot.agent.shaded.org.slf4j.Logger;
@@ -42,8 +42,8 @@ public class ExampleCollector implements org.glowroot.agent.collector.Collector 
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     @Override
-    public void init(File confDir, File sharedConfDir, Environment environment,
-            AgentConfig agentConfig, AgentConfigUpdater agentConfigUpdater) {}
+    public void init(List<File> confDirs, Environment environment, AgentConfig agentConfig,
+            AgentConfigUpdater agentConfigUpdater) {}
 
     @Override
     public void collectAggregates(AggregateReader aggregateReader) {}

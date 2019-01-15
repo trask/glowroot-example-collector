@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@ import org.glowroot.agent.collector.Collector.TraceVisitor;
 import org.glowroot.agent.shaded.com.google.common.io.BaseEncoding;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
-import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.Environment;
-import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValue;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.Proto;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.TraceOuterClass.Trace.QueryEntryMessage;
@@ -47,8 +47,8 @@ public class ExampleTest {
     public void test() throws Exception {
         Collector collector = new ExampleCollector();
 
-        collector.init(new File("target"), null, Environment.getDefaultInstance(),
-                AgentConfig.getDefaultInstance(), new NoopAgentConfigUpdater());
+        collector.init(new ArrayList<File>(), Environment.getDefaultInstance(),
+                AgentConfig.getDefaultInstance(), new NopAgentConfigUpdater());
 
         collector.collectTrace(new TraceReaderImpl(1000000 + random.nextInt(2000000000)));
 
@@ -139,7 +139,8 @@ public class ExampleTest {
             traceVisitor.visitHeader(readHeader());
         }
 
-        private Trace.Header readHeader() {
+        @Override
+        public Trace.Header readHeader() {
             long auxThreadDuration = random(durationNanos);
             long asyncTimerDuration = random(durationNanos);
             return Trace.Header.newBuilder()
@@ -182,7 +183,7 @@ public class ExampleTest {
                                     .setCount(random.nextInt(10))
                                     .build()))
                             .build())
-                    .addAllAuxThreadRootTimer(Arrays.asList(Trace.Timer.newBuilder()
+                    .setAuxThreadRootTimer(Trace.Timer.newBuilder()
                             .setName("auxiliary thread")
                             .setTotalNanos(auxThreadDuration)
                             .setCount(1)
@@ -191,23 +192,23 @@ public class ExampleTest {
                                     .setTotalNanos(random(auxThreadDuration))
                                     .setCount(random.nextInt(10))
                                     .build()))
-                            .build()))
+                            .build())
                     .addAllAsyncTimer(Arrays.asList(Trace.Timer.newBuilder()
                             .setName("http request")
                             .setTotalNanos(asyncTimerDuration)
                             .setCount(random.nextInt(2))
                             .build()))
                     .setMainThreadStats(Trace.ThreadStats.newBuilder()
-                            .setTotalCpuNanos(random(durationNanos / 3))
-                            .setTotalWaitedNanos(random(durationNanos / 3))
-                            .setTotalBlockedNanos(random(durationNanos / 3))
-                            .setTotalAllocatedBytes(random.nextInt(1000000))
+                            .setCpuNanos(random(durationNanos / 3))
+                            .setWaitedNanos(random(durationNanos / 3))
+                            .setBlockedNanos(random(durationNanos / 3))
+                            .setAllocatedBytes(random.nextInt(1000000))
                             .build())
                     .setAuxThreadStats(Trace.ThreadStats.newBuilder()
-                            .setTotalCpuNanos(random(durationNanos / 3))
-                            .setTotalWaitedNanos(random(durationNanos / 3))
-                            .setTotalBlockedNanos(random(durationNanos / 3))
-                            .setTotalAllocatedBytes(random.nextInt(1000000))
+                            .setCpuNanos(random(durationNanos / 3))
+                            .setWaitedNanos(random(durationNanos / 3))
+                            .setBlockedNanos(random(durationNanos / 3))
+                            .setAllocatedBytes(random.nextInt(1000000))
                             .build())
                     .build();
         }
@@ -247,7 +248,7 @@ public class ExampleTest {
         }
     }
 
-    private static class NoopAgentConfigUpdater implements AgentConfigUpdater {
+    private static class NopAgentConfigUpdater implements AgentConfigUpdater {
         @Override
         public void update(AgentConfig agentConfig) throws IOException {}
     }
