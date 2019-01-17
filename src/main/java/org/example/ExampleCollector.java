@@ -84,6 +84,14 @@ public class ExampleCollector implements org.glowroot.agent.collector.Collector 
             jg.writeFieldName("queries");
             TraceWriter.writeQueries(jg, traceVisitor.queries, traceVisitor.sharedQueryTexts);
         }
+        if (traceVisitor.mainThreadProfile != null) {
+            jg.writeFieldName("mainThreadProfile");
+            TraceWriter.writeProfile(jg, traceVisitor.mainThreadProfile);
+        }
+        if (traceVisitor.auxThreadProfile != null) {
+            jg.writeFieldName("auxThreadProfile");
+            TraceWriter.writeProfile(jg, traceVisitor.auxThreadProfile);
+        }
         jg.writeEndObject();
         jg.close();
         logger.info(baos.toString());
@@ -97,6 +105,8 @@ public class ExampleCollector implements org.glowroot.agent.collector.Collector 
         private final List<Trace.Entry> entries = Lists.newArrayList();
         private List<Aggregate.Query> queries = ImmutableList.of();
         private List<String> sharedQueryTexts = ImmutableList.of();
+        private Profile mainThreadProfile;
+        private Profile auxThreadProfile;
         private Trace.Header header;
 
         @Override
@@ -115,10 +125,14 @@ public class ExampleCollector implements org.glowroot.agent.collector.Collector 
         }
 
         @Override
-        public void visitMainThreadProfile(Profile profile) {}
+        public void visitMainThreadProfile(Profile profile) {
+            mainThreadProfile = profile;
+        }
 
         @Override
-        public void visitAuxThreadProfile(Profile profile) {}
+        public void visitAuxThreadProfile(Profile profile) {
+            auxThreadProfile = profile;
+        }
 
         @Override
         public void visitHeader(Trace.Header header) {

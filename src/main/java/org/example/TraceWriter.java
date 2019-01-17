@@ -18,7 +18,6 @@ package org.example;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,6 +25,8 @@ import java.util.Set;
 import com.fasterxml.jackson.core.JsonGenerator;
 
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.ProfileOuterClass.Profile;
+import org.glowroot.agent.shaded.org.glowroot.wire.api.model.ProfileOuterClass.Profile.ProfileNode;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.Proto;
 import org.glowroot.agent.shaded.org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -49,6 +50,10 @@ class TraceWriter {
     static void writeQueries(JsonGenerator jg, List<Aggregate.Query> queries,
             List<String> sharedQueryTexts) throws IOException {
         new TraceWriter(jg).writeQueries(queries, sharedQueryTexts);
+    }
+
+    static void writeProfile(JsonGenerator jg, Profile profile) throws IOException {
+        new TraceWriter(jg).writeProfile(profile);
     }
 
     private void writeHeader(Trace.Header header) throws IOException {
@@ -127,11 +132,42 @@ class TraceWriter {
     private void writeQueries(List<Aggregate.Query> queries, List<String> sharedQueryTexts)
             throws IOException {
         jg.writeStartArray();
-        Iterator<Aggregate.Query> i = queries.iterator();
-        while (i.hasNext()) {
-            Aggregate.Query query = i.next();
-            jg.writeStartObject();
+        for (Aggregate.Query query : queries) {
             writeQuery(query, sharedQueryTexts);
+        }
+        jg.writeEndArray();
+    }
+
+    private void writeProfile(Profile profile) throws IOException {
+        jg.writeStartArray();
+        // node ordering is pre-order depth-first
+        // and there can be multiple "root" nodes (with depth=0)
+        int priorDepth = -1;
+        for (ProfileNode node : profile.getNodeList()) {
+            int currDepth = node.getDepth();
+            if (priorDepth != -1) {
+                if (currDepth > priorDepth) {
+                    jg.writeArrayFieldStart("childNodes");
+                } else if (currDepth < priorDepth) {
+                    for (int i = priorDepth; i > currDepth; i--) {
+                        jg.writeEndObject();
+                        jg.writeEndArray();
+                    }
+                    jg.writeEndObject();
+                } else {
+                    jg.writeEndObject();
+                }
+            }
+            jg.writeStartObject();
+            jg.writeStringField("stackTraceElement", getStackTraceElement(node, profile));
+            Profile.LeafThreadState leafThreadState = node.getLeafThreadState();
+            if (leafThreadState != Profile.LeafThreadState.NONE) {
+                jg.writeStringField("leafThreadState", leafThreadState.name());
+            }
+            jg.writeNumberField("sampleCount", node.getSampleCount());
+            priorDepth = currDepth;
+        }
+        if (priorDepth != -1) {
             jg.writeEndObject();
         }
         jg.writeEndArray();
@@ -176,6 +212,7 @@ class TraceWriter {
 
     private void writeQuery(Aggregate.Query query, List<String> sharedQueryTexts)
             throws IOException {
+        jg.writeStartObject();
         jg.writeStringField("type", query.getType());
         jg.writeStringField("queryText", sharedQueryTexts.get(query.getSharedQueryTextIndex()));
         jg.writeNumberField("totalDurationNanos", query.getTotalDurationNanos());
@@ -184,6 +221,15 @@ class TraceWriter {
             jg.writeNumberField("totalRows", query.getTotalRows().getValue());
         }
         jg.writeBooleanField("active", query.getActive());
+        jg.writeEndObject();
+    }
+
+    private String getStackTraceElement(ProfileNode node, Profile profile) {
+        String className = profile.getClassName(node.getClassNameIndex());
+        String methodName = profile.getMethodName(node.getMethodNameIndex());
+        String fileName = profile.getFileName(node.getFileNameIndex());
+        return new StackTraceElement(className, methodName, fileName, node.getLineNumber())
+                .toString();
     }
 
     private void writeDetailEntries(List<Trace.DetailEntry> detailEntries) throws IOException {
