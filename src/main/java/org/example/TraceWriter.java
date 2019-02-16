@@ -38,22 +38,29 @@ class TraceWriter {
         this.jg = jg;
     }
 
-    static void writeHeader(JsonGenerator jg, Trace.Header header) throws IOException {
-        new TraceWriter(jg).writeHeader(header);
-    }
-
-    static void writeEntries(JsonGenerator jg, List<Trace.Entry> entries,
-            List<String> sharedQueryTexts) throws IOException {
-        new TraceWriter(jg).writeEntries(entries, sharedQueryTexts);
-    }
-
-    static void writeQueries(JsonGenerator jg, List<Aggregate.Query> queries,
-            List<String> sharedQueryTexts) throws IOException {
-        new TraceWriter(jg).writeQueries(queries, sharedQueryTexts);
-    }
-
-    static void writeProfile(JsonGenerator jg, Profile profile) throws IOException {
-        new TraceWriter(jg).writeProfile(profile);
+    void write(Trace.Header header, List<Trace.Entry> entries, List<Aggregate.Query> queries,
+            List<String> sharedQueryTexts, Profile mainThreadProfile, Profile auxThreadProfile)
+            throws IOException {
+        jg.writeStartObject();
+        jg.writeFieldName("header");
+        writeHeader(header);
+        if (!entries.isEmpty()) {
+            jg.writeFieldName("entries");
+            writeEntries(entries, sharedQueryTexts);
+        }
+        if (!queries.isEmpty()) {
+            jg.writeFieldName("queries");
+            writeQueries(queries, sharedQueryTexts);
+        }
+        if (mainThreadProfile != null) {
+            jg.writeFieldName("mainThreadProfile");
+            writeProfile(mainThreadProfile);
+        }
+        if (auxThreadProfile != null) {
+            jg.writeFieldName("auxThreadProfile");
+            writeProfile(auxThreadProfile);
+        }
+        jg.writeEndObject();
     }
 
     private void writeHeader(Trace.Header header) throws IOException {
@@ -93,15 +100,14 @@ class TraceWriter {
             writeAsyncTimers(header.getAsyncTimerList());
             jg.writeEndArray();
         }
-        if (header.hasMainThreadRootTimer()) {
+        if (header.hasMainThreadStats()) {
             jg.writeFieldName("mainThreadStats");
             writeThreadStats(header.getMainThreadStats());
         }
-        if (header.hasAuxThreadRootTimer()) {
+        if (header.hasAuxThreadStats()) {
             jg.writeFieldName("auxThreadStats");
             writeThreadStats(header.getAuxThreadStats());
         }
-
         jg.writeEndObject();
     }
 

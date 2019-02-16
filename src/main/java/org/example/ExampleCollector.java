@@ -18,6 +18,7 @@ package org.example;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -46,7 +47,19 @@ public class ExampleCollector implements org.glowroot.agent.collector.Collector 
             AgentConfigUpdater agentConfigUpdater) {}
 
     @Override
-    public void collectAggregates(AggregateReader aggregateReader) {}
+    public void collectAggregates(AggregateReader aggregateReader) throws Exception {
+        CollectingAggregateVisitor aggregateVisitor = new CollectingAggregateVisitor();
+        aggregateReader.accept(aggregateVisitor);
+
+        for (CollectedAggregate collectedAggregate : aggregateVisitor.collectedAggregates) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            JsonGenerator jg = jsonFactory.createGenerator(baos);
+            new AggregateWriter(jg).write(collectedAggregate.transactionType,
+                    collectedAggregate.aggregate, collectedAggregate.sharedQueryTexts);
+            jg.close();
+            logger.info(baos.toString());
+        }
+    }
 
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws IOException {
@@ -73,32 +86,49 @@ public class ExampleCollector implements org.glowroot.agent.collector.Collector 
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         JsonGenerator jg = jsonFactory.createGenerator(baos);
-        jg.writeStartObject();
-        jg.writeFieldName("header");
-        TraceWriter.writeHeader(jg, traceVisitor.header);
-        if (!traceVisitor.entries.isEmpty()) {
-            jg.writeFieldName("entries");
-            TraceWriter.writeEntries(jg, traceVisitor.entries, traceVisitor.sharedQueryTexts);
-        }
-        if (!traceVisitor.queries.isEmpty()) {
-            jg.writeFieldName("queries");
-            TraceWriter.writeQueries(jg, traceVisitor.queries, traceVisitor.sharedQueryTexts);
-        }
-        if (traceVisitor.mainThreadProfile != null) {
-            jg.writeFieldName("mainThreadProfile");
-            TraceWriter.writeProfile(jg, traceVisitor.mainThreadProfile);
-        }
-        if (traceVisitor.auxThreadProfile != null) {
-            jg.writeFieldName("auxThreadProfile");
-            TraceWriter.writeProfile(jg, traceVisitor.auxThreadProfile);
-        }
-        jg.writeEndObject();
+        new TraceWriter(jg).write(traceVisitor.header, traceVisitor.entries, traceVisitor.queries,
+                traceVisitor.sharedQueryTexts, traceVisitor.mainThreadProfile,
+                traceVisitor.auxThreadProfile);
         jg.close();
         logger.info(baos.toString());
     }
 
     @Override
     public void log(LogEvent logEvent) {}
+
+    private static class CollectingAggregateVisitor implements AggregateVisitor {
+
+        private final List<CollectedAggregate> collectedAggregates =
+                new ArrayList<CollectedAggregate>();
+
+        @Override
+        public void visitOverallAggregate(String transactionType,
+                List<String> sharedQueryTexts, Aggregate overallAggregate) throws Exception {
+            collectedAggregates.add(
+                    new CollectedAggregate(transactionType, overallAggregate, sharedQueryTexts));
+        }
+
+        @Override
+        public void visitTransactionAggregate(String transactionType, String transactionName,
+                List<String> sharedQueryTexts, Aggregate transactionAggregate) throws Exception {
+            // this is the breakdown per transaction name (the transaction sidebar in Glowroot UI)
+            // ignoring to keep the example collector simple
+        }
+    }
+
+    private static class CollectedAggregate {
+
+        private final String transactionType;
+        private final Aggregate aggregate;
+        private final List<String> sharedQueryTexts;
+
+        private CollectedAggregate(String transactionType, Aggregate aggregate,
+                List<String> sharedQueryTexts) {
+            this.transactionType = transactionType;
+            this.aggregate = aggregate;
+            this.sharedQueryTexts = sharedQueryTexts;
+        }
+    }
 
     private static class CollectingTraceVisitor implements TraceVisitor {
 
